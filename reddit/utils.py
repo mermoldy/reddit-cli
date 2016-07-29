@@ -1,9 +1,58 @@
 # -*- coding: utf-8 -*-
 import click
+import fcntl
+import termios
+import struct
 from datetime import datetime
 
 
-def pretty_date(timestamp):
+try:
+    data = fcntl.ioctl(0, termios.TIOCGWINSZ, struct.pack('HHHH', 0, 0, 0, 0))
+    _, WINDOW_WIDTH, _, _ = struct.unpack('HHHH', data)
+    if 0 > WINDOW_WIDTH > 200:
+        raise Exception
+except Exception as e:
+    WINDOW_WIDTH = 80
+
+
+STYLES = {
+    'header': {
+        'initial_indent': '# ',
+        'subsequent_indent': '  ',
+        'fg': 'blue'
+    },
+    'regular': {
+        'initial_indent': '  | ',
+        'subsequent_indent': '  | '
+    },
+    'signature': {
+        'initial_indent': '  | ',
+        'fg': 'cyan'
+    },
+    'author': {
+        'initial_indent': '  | ',
+        'fg': 'yellow'
+    },
+    'comment': {
+        'initial_indent': '',
+        'fg': 'yellow'
+    },
+    'quote': {
+        'initial_indent': '  | ',
+        'fg': 'green'
+    },
+    'about': {
+        'initial_indent': '  | ',
+        'subsequent_indent': '  | ' + ' ' * 7,
+    },
+}
+
+
+def _pluralize(digit, text):
+    return "{} {}{}".format(digit, text, 's' if digit != 1 else '')
+
+
+def _pretty_date(timestamp):
 
     diff = datetime.now() - datetime.fromtimestamp(timestamp)
     second_diff = diff.seconds
@@ -33,60 +82,67 @@ def pretty_date(timestamp):
         return str(day_diff / 7) + " weeks ago"
 
 
-def echo(text, indent='', subsequent_indent='', fg='white'):
-    if indent:
-        text = click.wrap_text(text, width=78,
-                               initial_indent=indent,
-                               subsequent_indent=subsequent_indent or indent,
-                               preserve_paragraphs=False)
-    text = click.style(text, fg=fg)
-    click.echo(text)
+def _show_subreddit(data):
+    data['about'] = data['public_description'].replace('\n', '')
+
+    echo(u'{title}'.format(**data), **STYLES['header'])
+    echo(u'subreddit: {url}'.format(**data), **STYLES['signature'])
+    echo(u'url: https://reddit.com{url}'.format(**data), **STYLES['regular'])
+    echo(u'about: {about}'.format(**data), **STYLES['about'])
+    echo(u'subscribers: {subscribers}'.format(**data), **STYLES['regular'])
+    echo()
 
 
-def _show_subreddit(subreddit):
-    indent = '  | '
-    data = subreddit
-    data['description'] = data['public_description'].replace('\n', '')
-    echo(u'{title}'.format(**data), fg='yellow')
-    echo(u'subreddit: {url}'.format(**data), indent=indent, fg='cyan')
-    echo(u'url: https://reddit.com{url}'.format(**data), indent=indent)
-    echo(u'description: {description}'.format(**data), indent=indent,
-         subsequent_indent=indent + (' ' * 13))
-    echo(u'subscribers: {subscribers}'.format(**data), indent=indent)
-    echo('')
+def _show_submission(data):
+    score = data.get('ups', 0) - data.get('downs', 0)
+    data['points'] = _pluralize(score, 'point')
+    data['time'] = _pretty_date(data['created_utc'])
+
+    echo(u'{title}, {url}'.format(**data),  **STYLES['header'])
+    echo(u'submitted {time} by {author}'.format(**data), **STYLES['author'])
+    echo(u'id {id}'.format(**data), **STYLES['regular'])
+    echo(u'link: https://redd.it/{id}'.format(**data), **STYLES['regular'])
+    echo(u'comments: {num_comments}'.format(**data), **STYLES['regular'])
+    echo()
 
 
-def _show_submission(submission):
-    data = submission.__dict__
-    data['short_link'] = submission.short_link
-    echo(u'# {title}'.format(**data), fg='yellow')
-    echo(u'[id: {id}]'.format(**data), fg='cyan')
-    echo(u'[short_link: {short_link}]\n'
-         u'[op: {author.name}]\n'
-         u'[comments: {num_comments}]\n'
-         u'[up: {ups} down: {downs}]\n'.format(**data))
-
-
-def _show_comment(comment, indent='', op=''):
-    name = 'deleted' if not comment.author else comment.author.name
-    score = comment.ups - comment.downs
-    points = "{} point{}".format(score, ['s', ''][score == 1])
-    time = pretty_date(comment.created_utc)
-
-    echo(u"{}, {}, {}".format(name, points, time), indent=indent, fg='yellow')
-    for p in comment.body.split('\n'):
+def _show_comment(comment, prepend=''):
+    score = comment.get('ups', 0) - comment.get('downs', 0)
+    points = _pluralize(score, 'point')
+    name = comment.get('author', '') or 'deleted'
+    time = _pretty_date(comment.get('created_utc', 0))
+    echo(u"{}, {}, {}".format(name, points, time),
+         prepend=prepend, **STYLES['comment'])
+    for p in comment['body'].split('\n'):
         if p.lstrip().startswith('>'):
-            echo(p, indent=indent + '  | ', fg="green")
-        elif p.strip():
-            echo(p, indent=indent + '  | ')
+            echo(p, prepend=prepend, **STYLES['quote'])
         else:
-            echo('-', indent=indent + '  | ')
-    echo('')
+            echo(p if p.strip() else '-', prepend=prepend, **STYLES['regular'])
+    echo()
 
-    indent += '  '
-    for reply in comment.replies:
-        if hasattr(reply, 'body'):
-            _show_comment(reply, indent=indent, op=op)
+
+def _show_comment_tree(comment, prepend='  '):
+    data = comment.get('data', None)
+    if not data:
+        return
+
+    if 'body' in data:
+        _show_comment(data, prepend=prepend)
+    elif 'title' in data:
+        return _show_submission(data)
+
+    if 'replies' in data:
+        for reply in data['replies']['data']['children']:
+            _show_comment_tree(reply, prepend=prepend + '  ')
+
+
+def echo(text='', prepend='', initial_indent='', subsequent_indent='', fg=''):
+    wrapped = click.wrap_text(text,
+                              width=WINDOW_WIDTH - len(initial_indent),
+                              initial_indent=prepend + initial_indent,
+                              subsequent_indent=prepend + subsequent_indent,
+                              preserve_paragraphs=False)
+    click.secho(wrapped, fg=fg)
 
 
 def show_subreddits(subreddits):
@@ -99,8 +155,7 @@ def show_submissions(submissions):
         _show_submission(submission)
 
 
-def show_discussion(submission):
-    _show_submission(submission)
-    for comment in submission.comments:
-        if hasattr(comment, 'body'):
-            _show_comment(comment)
+def show_comments(comments):
+    for comment in comments:
+        _show_comment_tree(comment)
+

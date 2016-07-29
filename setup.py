@@ -13,6 +13,7 @@ setup(
     include_package_data=True,
     install_requires=[
         'click==6.6',
+        'requests==2.10.0',
     ],
     entry_points='''
         [console_scripts]

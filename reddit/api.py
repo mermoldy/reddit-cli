@@ -1,38 +1,77 @@
 # -*- coding: utf-8 -*-
-import praw
 import requests
-from reddit.exceptions import RedditApiError
+
+from reddit.exceptions import *
+
+API_URL = 'https://api.reddit.com'
+USER_AGENT = 'reddit-cli-application'
 
 
-class Reddit(object):
+def _formalize_subreddit_name(name):
+    """Formalize subreddit name."""
 
-    def __init__(self):
-        self._api_url = 'https://api.reddit.com'
-        self._user_agent = 'reddit-cli-application'
-        self.praw_api = praw.Reddit(user_agent='reddit-cli-application')
+    if name.startswith('/r/'):
+        name = name[3:]
+    elif name.startswith('r/'):
+        name = name[2:]
+    name = name.replace('/', '')
+    return name
 
-    def _call_api(self, path, params):
-        resp = requests.get('{}/{}.json'.format(self._api_url, path),
-                            params=params,
-                            headers={'User-agent': self._user_agent}).json()
-        if u'error' in resp:
-            raise RedditApiError(message=resp.get('message', ''))
-        if u'data' not in resp:
-            raise RedditApiError(message='Invalid response')
-        return resp['data']
 
-    def search_subreddits(self, query=None, limit=100):
-        params = {'q': query, 'limit': limit}
-        data = self._call_api('subreddits/search', params)
-        return (item['data'] for item in data['children'])
-        # https://api.reddit.com/subreddits/search/?q=te&limit=1
-        #return self.praw_api.get_content(url, params=params, limit=limit)
+def _api_call(path, params=None):
+    """Request to reddit api."""
 
-    def get_submissions(self, subreddit, limit=100):
-        return self.praw_api.get_subreddit(subreddit).get_hot(limit=limit)
+    print ('call', '{}/{}.json'.format(API_URL, path))
 
-    def get_submission(self, subreddit, submission, limit=100):
-        submissions = self.get_submissions(subreddit, limit=None)
-        data = filter(lambda item: item.id == submission, submissions)
-        if data:
-            return data[0]
+    resp = requests.get('{}/{}.json'.format(API_URL, path),
+                        params=params,
+                        headers={'User-agent': USER_AGENT}).json()
+
+    if not resp or u'error' in resp:
+        raise RedditApiError(message=resp.get('message', ''))
+
+    return resp
+
+
+def search_subreddits(query=None, limit=100):
+    """Search subreddits by query."""
+
+    params = {'q': query, 'limit': limit}
+    resp = _api_call('subreddits/search', params)
+
+    if u'data' not in resp:
+        raise RedditApiError(message='Invalid response')
+
+    children = resp['data']['children']
+    if len(children) == 0:
+        raise SubredditNotFound(message=query)
+
+    return (item['data'] for item in children)
+
+
+def get_submissions(subreddit_name, limit=100, order='top'):
+    """Fetch submissions of subreddit."""
+
+    if order not in ['hot', 'new', 'rising', 'top', 'controversial']:
+        raise InvalidOption(message="wrong order argument")
+
+    params = {'limit': limit}
+    name = _formalize_subreddit_name(subreddit_name)
+
+    resp = _api_call('r/{}/{}'.format(name, order), params)
+
+    children = resp['data']['children']
+    if len(children) == 0:
+        raise SubredditNotFound(message=subreddit_name)
+    elif len(children) > limit:
+        children = children[:limit]
+
+    return (item['data'] for item in children)
+
+
+def get_comments(submission_id):
+    """Fetch comments of reddit submission."""
+
+    resp = _api_call('comments/{}'.format(submission_id))
+    data = (item['data']['children'] for item in resp)
+    return (item for sublist in data for item in sublist)
