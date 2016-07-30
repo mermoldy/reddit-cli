@@ -1,31 +1,5 @@
 # -*- coding: utf-8 -*-
-import struct
-from platform import platform
 from datetime import datetime
-
-PLATFORM = platform().lower()
-
-
-def _get_terminal_size_nix():
-    import fcntl
-    import termios
-    data = fcntl.ioctl(0, termios.TIOCGWINSZ, struct.pack('HHHH', 0, 0, 0, 0))
-    height, width, _, _ = struct.unpack('HHHH', data)
-    return width, height
-
-
-def _get_terminal_size_windows():
-    from ctypes import windll, create_string_buffer
-    h = windll.kernel32.GetStdHandle(-12)
-    csbi = create_string_buffer(22)
-    res = windll.kernel32.GetConsoleScreenBufferInfo(h, csbi)
-    if res:
-        (bufx, bufy, curx, cury, wattr,
-         left, top, right, bottom,
-         maxx, maxy) = struct.unpack("hhhhHhhhhhh", csbi.raw)
-        width = right - left + 1
-        height = bottom - top + 1
-        return width, height
 
 
 def recursive_get(d, key):
@@ -37,16 +11,6 @@ def recursive_get(d, key):
         return recursive_get(h_value, tail)
     if not tail:
         return h_value
-
-
-def get_terminal_width():
-    try:
-        if 'windows' in PLATFORM:
-            return _get_terminal_size_windows()[0]
-        elif any(item in PLATFORM for item in ['linux', 'darwin']):
-            return _get_terminal_size_nix()[0]
-    except:
-        pass
 
 
 def pluralize(digit, text):

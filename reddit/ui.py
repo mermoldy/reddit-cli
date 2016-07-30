@@ -4,7 +4,7 @@ import sys
 from reddit import utils
 
 
-WINDOW_WIDTH = utils.get_terminal_width() or 80
+WINDOW_WIDTH = width = click.get_terminal_size()[0]
 STYLES = {
     'header': {
         'initial_indent': '# ',
@@ -41,13 +41,13 @@ STYLES = {
 def _wait_input():
     """Wait user input and clear to the end of line."""
 
-    click.echo('[any]: next     '
-               '[q]: quit       ')
+    click.echo('' if click.utils.WIN else '[any]: next\t[q]: quit')
 
     if click.getchar() in ['q', u'q', b'q']:
         sys.exit(0)
 
-    click.echo("\033[F\033[K")
+    if not click.utils.WIN:
+        click.echo("\033[F\033[K")
 
 
 def _show_subreddit(data):
