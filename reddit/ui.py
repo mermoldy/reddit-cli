@@ -44,10 +44,10 @@ def _wait_input():
     click.echo('[any]: next     '
                '[q]: quit       ')
 
-    if click.getchar() == 'q':
+    if click.getchar() in ['q', u'q', b'q']:
         sys.exit(0)
 
-    sys.stdout.write("\033[F\033[K")
+    click.echo("\033[F\033[K")
 
 
 def _show_subreddit(data):
