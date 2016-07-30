@@ -13,7 +13,7 @@ reddit-cli search <search_query>
 
 Show subreddit submissions
 ```bash
-reddit-cli subreddit <subreddit_name> --limit 20 --order=hot
+reddit-cli subreddit <subreddit_name> --limit=20 --order=hot
 ```
 
 Show submission comments
