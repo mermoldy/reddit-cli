@@ -6,7 +6,7 @@ from reddit.settings import STYLES
 
 
 def _wait_input():
-    """Wait user input and clear to the end of line."""
+    """Wait user input."""
 
     if not click.utils.WIN:
         click.echo('[any]: next\t[q]: quit')
@@ -14,7 +14,8 @@ def _wait_input():
     if click.getchar() in ['q', u'q', b'q']:
         sys.exit(0)
 
-    click.echo('' if click.utils.WIN else '\033[F\033[K')
+    if not click.utils.WIN:
+        click.echo('\033[F\033[K')
 
 
 def _show_subreddit(data):
@@ -25,6 +26,7 @@ def _show_subreddit(data):
     echo(u'url: https://reddit.com{url}'.format(**data), **STYLES['regular'])
     echo(u'about: {about}'.format(**data), **STYLES['about'])
     echo(u'subscribers: {subscribers}'.format(**data), **STYLES['regular'])
+    click.echo()
 
 
 def _show_submission(data):
@@ -37,6 +39,7 @@ def _show_submission(data):
     echo(u'submission id: {id}'.format(**data), **STYLES['regular'])
     echo(u'link: https://redd.it/{id}'.format(**data), **STYLES['regular'])
     echo(u'comments: {num_comments}'.format(**data), **STYLES['regular'])
+    click.echo()
 
 
 def _show_comment(comment, prepend=''):
@@ -52,6 +55,7 @@ def _show_comment(comment, prepend=''):
             echo(p, prepend=prepend, **STYLES['quote'])
         else:
             echo(p if p.strip() else '-', prepend=prepend, **STYLES['regular'])
+    click.echo()
 
 
 def _show_comment_tree(comment, prepend='  '):
