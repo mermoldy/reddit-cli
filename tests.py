@@ -3,12 +3,11 @@
 reddit api tests.
 """
 
-from random import randint
 from reddit import utils
 from reddit import api
 
 SUBREDDITS = [
-    '/r/python/',
+    '/r/python',
     '/r/pokemongo//',
     'opensource'
 ]
@@ -26,16 +25,14 @@ def _calc_replies(comments):
 
 def test_reddit_search():
     for name in SUBREDDITS:
-        limit = randint(1, 5)
-        subreddits = api.search_subreddits(query=name, limit=limit)
-        assert len(list(subreddits)) == limit
+        subreddits = list(api.search_subreddits(query=name))
+        assert len(subreddits) > 0
 
 
 def test_reddit_submissions():
     for name in SUBREDDITS:
-        limit = randint(1, 5)
-        submissions = api.get_submissions(subreddit_name=name, limit=limit)
-        assert len(list(submissions)) == limit
+        submissions = list(api.get_submissions(subreddit_name=name))
+        assert len(submissions) > 0
 
 
 def test_reddit_comments():
