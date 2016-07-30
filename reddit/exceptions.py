@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from reddit import views
+from reddit import ui
 from click.exceptions import ClickException
 
 
@@ -11,7 +11,7 @@ class RedditException(ClickException):
 
     def show(self):
         name = self.__class__.__name__
-        views.echo('{}: {}'.format(name, self.message), fg='red')
+        ui.echo('{}: {}'.format(name, self.message), fg='red')
 
 
 class RedditApiError(RedditException):

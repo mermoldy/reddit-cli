@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import click
+import sys
 from reddit import utils
 
 
@@ -35,6 +36,18 @@ STYLES = {
         'subsequent_indent': '  | ' + ' ' * 7,
     },
 }
+
+
+def _wait_input():
+    """Wait user input and clear to the end of line."""
+
+    click.echo('[any]: next     '
+               '[q]: quit       ')
+
+    if click.getchar() == 'q':
+        sys.exit(0)
+
+    sys.stdout.write("\033[F\033[K")
 
 
 def _show_subreddit(data):
@@ -77,18 +90,19 @@ def _show_comment(comment, prepend=''):
 
 
 def _show_comment_tree(comment, prepend='  '):
-    data = comment.get('data', None)
-    if not data:
-        return
 
-    if 'body' in data:
-        _show_comment(data, prepend=prepend)
-    elif 'title' in data:
-        return _show_submission(data)
+    body = utils.recursive_get(comment, 'data.body') or []
+    title = utils.recursive_get(comment, 'data.title') or []
+    replies = utils.recursive_get(comment, "data.replies.data.children") or []
 
-    if data.get('replies', ''):
-        for reply in data['replies']['data']['children']:
+    if body:
+        _show_comment(comment['data'], prepend=prepend)
+        _wait_input()
+
+        for reply in replies:
             _show_comment_tree(reply, prepend=prepend + '  ')
+    elif title:
+        return _show_submission(comment['data'])
 
 
 def echo(text='', prepend='', initial_indent='', subsequent_indent='', fg=''):
@@ -103,11 +117,13 @@ def echo(text='', prepend='', initial_indent='', subsequent_indent='', fg=''):
 def show_subreddits(subreddits):
     for subreddit in subreddits:
         _show_subreddit(subreddit)
+        _wait_input()
 
 
 def show_submissions(submissions):
     for submission in submissions:
         _show_submission(submission)
+        _wait_input()
 
 
 def show_comments(comments):

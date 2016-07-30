@@ -28,6 +28,17 @@ def _get_terminal_size_windows():
         return width, height
 
 
+def recursive_get(d, key):
+    if type(d) != dict:
+        return
+    head, _, tail = key.partition('.')
+    h_value = d.get(head, '')
+    if tail and type(h_value) == dict:
+        return recursive_get(h_value, tail)
+    if not tail:
+        return h_value
+
+
 def get_terminal_width():
     try:
         if 'windows' in PLATFORM:
