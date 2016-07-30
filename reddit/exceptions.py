@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from utils import echo
+from views import echo
 from click.exceptions import ClickException
 
 

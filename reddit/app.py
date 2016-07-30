@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import click
-import api
-import utils
+from reddit import api
+from reddit import views
 
 
 class RedditCLI(click.Group):
@@ -37,7 +37,7 @@ def search(search_query, **kwargs):
     """Search subreddit for the given query"""
 
     subreddits = api.search_subreddits(query=search_query, **kwargs)
-    utils.show_subreddits(subreddits)
+    views.show_subreddits(subreddits)
 
 
 @cli.command()
@@ -50,7 +50,7 @@ def subreddit(name, **kwargs):
     """Display subreddit submissions"""
 
     submissions = api.get_submissions(subreddit_name=name, **kwargs)
-    utils.show_submissions(submissions)
+    views.show_submissions(submissions)
 
 
 @cli.command()
@@ -59,7 +59,7 @@ def submission(submission_id, **kwargs):
     """Display comments of reddit submission"""
 
     comments = api.get_comments(submission_id=submission_id)
-    utils.show_comments(comments)
+    views.show_comments(comments)
 
 
 if __name__ == '__main__':

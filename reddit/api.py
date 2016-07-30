@@ -21,8 +21,6 @@ def _formalize_subreddit_name(name):
 def _api_call(path, params=None):
     """Request to reddit api."""
 
-    print ('call', '{}/{}.json'.format(API_URL, path))
-
     resp = requests.get('{}/{}.json'.format(API_URL, path),
                         params=params,
                         headers={'User-agent': USER_AGENT}).json()
