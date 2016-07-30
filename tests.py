@@ -2,14 +2,13 @@
 """
 reddit api tests.
 """
-
 from reddit import utils
 from reddit import api
 
 SUBREDDITS = [
     '/r/python',
-    '/r/pokemongo//',
-    'opensource'
+    'r/foxes',
+    'dalailama//',
 ]
 
 
@@ -38,5 +37,6 @@ def test_reddit_submissions():
 def test_reddit_comments():
     for name in SUBREDDITS:
         submissions = list(api.get_submissions(subreddit_name=name))
+
         comments = api.get_comments(submission_id=submissions[0]['id'])
         assert submissions[0]['num_comments'] == _calc_replies(comments) - 1

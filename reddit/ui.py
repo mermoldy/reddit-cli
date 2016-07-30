@@ -2,40 +2,7 @@
 import click
 import sys
 from reddit import utils
-
-
-WINDOW_WIDTH = width = click.get_terminal_size()[0]
-STYLES = {
-    'header': {
-        'initial_indent': '# ',
-        'subsequent_indent': '  ',
-        'fg': 'blue'
-    },
-    'regular': {
-        'initial_indent': '  | ',
-        'subsequent_indent': '  | '
-    },
-    'signature': {
-        'initial_indent': '  | ',
-        'fg': 'cyan'
-    },
-    'author': {
-        'initial_indent': '  | ',
-        'fg': 'yellow'
-    },
-    'comment': {
-        'initial_indent': '',
-        'fg': 'yellow'
-    },
-    'quote': {
-        'initial_indent': '  | ',
-        'fg': 'green'
-    },
-    'about': {
-        'initial_indent': '  | ',
-        'subsequent_indent': '  | ' + ' ' * 7,
-    },
-}
+from reddit.settings import STYLES
 
 
 def _wait_input():
@@ -75,7 +42,7 @@ def _show_submission(data):
 def _show_comment(comment, prepend=''):
     score = comment.get('ups', 0) - comment.get('downs', 0)
     points = utils.pluralize(score, 'point')
-    name = comment.get('author', '') or 'deleted'
+    name = comment.get('author', '[deleted]')
     time = utils.pretty_date(comment.get('created_utc', 0))
     echo(u"{}, {}, {}".format(name, points, time),
          prepend=prepend, **STYLES['comment'])
@@ -104,8 +71,9 @@ def _show_comment_tree(comment, prepend='  '):
 
 
 def echo(text='', prepend='', initial_indent='', subsequent_indent='', fg=''):
+    window_width, _ = click.get_terminal_size()
     wrapped = click.wrap_text(text,
-                              width=WINDOW_WIDTH - len(initial_indent),
+                              width=window_width - len(initial_indent),
                               initial_indent=prepend + initial_indent,
                               subsequent_indent=prepend + subsequent_indent,
                               preserve_paragraphs=False)

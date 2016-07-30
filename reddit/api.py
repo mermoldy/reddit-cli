@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
 import requests
-
 from reddit.exceptions import *
-
-API_URL = 'https://api.reddit.com'
-USER_AGENT = 'reddit-cli-application'
+from reddit import settings
 
 
 def _formalize_subreddit_name(name):
@@ -21,9 +18,9 @@ def _formalize_subreddit_name(name):
 def _api_call(path, params=None):
     """Request to reddit api."""
 
-    resp = requests.get('{}/{}.json'.format(API_URL, path),
+    resp = requests.get('{}/{}.json'.format(settings.REDDIT_API_URL, path),
                         params=params,
-                        headers={'User-agent': USER_AGENT}).json()
+                        headers={'User-agent': settings.USER_AGENT}).json()
 
     if not resp or u'error' in resp:
         raise RedditApiError(message=resp.get('message', ''))
@@ -59,7 +56,9 @@ def get_submissions(subreddit_name, limit=100, order='top'):
     resp = _api_call('r/{}/{}'.format(name, order), params)
 
     children = resp['data']['children']
-    if len(children) == 0:
+
+    if len(children) == 0 or \
+       any(u'domain' not in i['data'] for i in children):
         raise SubredditNotFound(message=subreddit_name)
     elif len(children) > limit:
         children = children[:limit]
@@ -67,9 +66,11 @@ def get_submissions(subreddit_name, limit=100, order='top'):
     return (item['data'] for item in children)
 
 
-def get_comments(submission_id):
+def get_comments(submission_id, limit=1000):
     """Fetch comments of reddit submission."""
 
-    resp = _api_call('comments/{}'.format(submission_id))
+    params = {'limit': limit}
+    resp = _api_call('comments/{}'.format(submission_id), params=params)
+
     data = (item['data']['children'] for item in resp)
     return (item for sublist in data for item in sublist)
