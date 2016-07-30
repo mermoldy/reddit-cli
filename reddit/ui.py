@@ -68,7 +68,7 @@ def _show_submission(data):
 
     echo(u'{title}, {url}'.format(**data),  **STYLES['header'])
     echo(u'submitted {time} by {author}'.format(**data), **STYLES['author'])
-    echo(u'id {id}'.format(**data), **STYLES['regular'])
+    echo(u'submission id: {id}'.format(**data), **STYLES['regular'])
     echo(u'link: https://redd.it/{id}'.format(**data), **STYLES['regular'])
     echo(u'comments: {num_comments}'.format(**data), **STYLES['regular'])
     echo()
@@ -82,7 +82,8 @@ def _show_comment(comment, prepend=''):
     echo(u"{}, {}, {}".format(name, points, time),
          prepend=prepend, **STYLES['comment'])
     for p in comment['body'].split('\n'):
-        if p.lstrip().startswith('>'):
+        if p.lstrip().startswith('>') or \
+           p.lstrip().startswith('&gt;'):
             echo(p, prepend=prepend, **STYLES['quote'])
         else:
             echo(p if p.strip() else '-', prepend=prepend, **STYLES['regular'])
