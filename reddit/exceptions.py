@@ -11,7 +11,7 @@ class RedditException(ClickException):
 
     def show(self):
         name = self.__class__.__name__
-        ui.echo('{}: {}'.format(name, self.message), fg='red')
+        ui.echo(u'{}: {}'.format(name, self.message), fg='red')
 
 
 class RedditApiError(RedditException):

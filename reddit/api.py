@@ -18,7 +18,7 @@ def _formalize_subreddit_name(name):
 def _api_call(path, params=None):
     """Request to reddit api."""
 
-    resp = requests.get('{}/{}.json'.format(settings.REDDIT_API_URL, path),
+    resp = requests.get(u'{}/{}.json'.format(settings.REDDIT_API_URL, path),
                         params=params,
                         headers={'User-agent': settings.USER_AGENT}).json()
 
@@ -32,7 +32,7 @@ def search_subreddits(query=None, limit=100):
     """Search subreddits by query."""
 
     params = {'q': query, 'limit': limit}
-    resp = _api_call('subreddits/search', params)
+    resp = _api_call(u'subreddits/search', params)
 
     if u'data' not in resp:
         raise RedditApiError(message='Invalid response')
@@ -53,7 +53,7 @@ def get_submissions(subreddit_name, limit=100, order='top'):
     params = {'limit': limit}
     name = _formalize_subreddit_name(subreddit_name)
 
-    resp = _api_call('r/{}/{}'.format(name, order), params)
+    resp = _api_call(u'r/{}/{}'.format(name, order), params)
 
     children = resp['data']['children']
 
@@ -70,7 +70,7 @@ def get_comments(submission_id, limit=1000):
     """Fetch comments of reddit submission."""
 
     params = {'limit': limit}
-    resp = _api_call('comments/{}'.format(submission_id), params=params)
+    resp = _api_call(u'comments/{}'.format(submission_id), params=params)
 
     data = (item['data']['children'] for item in resp)
     return (item for sublist in data for item in sublist)

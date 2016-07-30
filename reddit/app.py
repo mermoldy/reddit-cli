@@ -56,7 +56,7 @@ def subreddit(name, **kwargs):
 @cli.command()
 @click.argument('submission_id', metavar='<submission_id>')
 def submission(submission_id, **kwargs):
-    """Display comments of reddit submission"""
+    """Display comments of subreddit submission"""
 
     comments = api.get_comments(submission_id=submission_id)
     ui.show_comments(comments)
