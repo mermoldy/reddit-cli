@@ -1,4 +1,5 @@
 from setuptools import setup
+from setuptools import find_packages
 
 
 if __name__ == '__main__':
@@ -12,7 +13,7 @@ if __name__ == '__main__':
         url='https://github.com/mermoldy/reddit-cli',
         license='MIT',
         platforms='any',
-        py_modules=['reddit'],
+        packages=find_packages(),
         include_package_data=True,
         install_requires=[
             'click==6.6',
